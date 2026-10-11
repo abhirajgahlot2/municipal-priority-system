@@ -29,6 +29,32 @@ def _safe_text(value, default=""):
     return str(value).strip() if value is not None and str(value).strip() else default
 
 
+def _input_number(
+    complaint_input: dict,
+    field: str,
+    default: float,
+    minimum: float = 0.0,
+    maximum: float | None = None,
+) -> float:
+    value = complaint_input.get(field)
+    if value is None or value == "":
+        return float(default)
+
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as error:
+        raise ValueError(f"{field} must be a number") from error
+
+    if not np.isfinite(number):
+        raise ValueError(f"{field} must be a finite number")
+    if number < minimum or (maximum is not None and number > maximum):
+        bounds = f"{minimum} or greater"
+        if maximum is not None:
+            bounds = f"between {minimum} and {maximum}"
+        raise ValueError(f"{field} must be {bounds}")
+    return number
+
+
 def _priority_category(score: float) -> str:
     if score >= 0.80:
         return "CRITICAL"
@@ -112,20 +138,36 @@ def _build_feature_row(complaint_input: dict) -> dict:
         "status": _safe_text(complaint_input.get("status"), "Open").lower(),
     }
 
-    complaint["severity"] = float(derive_severity(complaint))
-    complaint["traffic_impact"] = float(derive_traffic_impact(complaint))
-    complaint["public_impact"] = float(derive_public_impact(complaint))
-    complaint["weather_risk"] = float(derive_weather_risk(complaint))
-
-    complaint["days_pending"] = float(
-        complaint_input.get("days_pending")
-        if complaint_input.get("days_pending") is not None
-        else derive_days_pending(complaint)
+    complaint["severity"] = _input_number(
+        complaint_input, "severity", derive_severity(complaint), maximum=10.0
+    )
+    complaint["traffic_impact"] = _input_number(
+        complaint_input, "traffic_impact", derive_traffic_impact(complaint), maximum=10.0
+    )
+    complaint["public_impact"] = _input_number(
+        complaint_input, "public_impact", derive_public_impact(complaint), maximum=10.0
+    )
+    complaint["weather_risk"] = _input_number(
+        complaint_input, "weather_risk", derive_weather_risk(complaint), maximum=10.0
     )
 
-    complaint["frequency_count"] = int(complaint_input.get("frequency_count", 0))
-    freq_value = complaint_input.get("complaint_frequency")
-    complaint["complaint_frequency"] = float(freq_value) if freq_value is not None else 0.0
+    complaint["days_pending"] = _input_number(
+        complaint_input, "days_pending", derive_days_pending(complaint)
+    )
+
+    try:
+        frequency_count = int(complaint_input.get("frequency_count", 0))
+    except (TypeError, ValueError) as error:
+        raise ValueError("frequency_count must be a whole number") from error
+    if frequency_count < 0:
+        raise ValueError("frequency_count cannot be negative")
+    complaint["frequency_count"] = frequency_count
+    complaint["complaint_frequency"] = _input_number(
+        complaint_input, "complaint_frequency", 0.0, maximum=10.0
+    )
+    complaint["estimated_repair_time"] = _input_number(
+        complaint_input, "estimated_repair_time", 4.0, minimum=0.5
+    )
 
     complaint["safety_risk"] = float(calculate_safety_risk({
         "severity": complaint["severity"],
@@ -171,6 +213,7 @@ def run_pipeline(complaint_input: dict) -> dict:
             "weather_risk": complaint["weather_risk"],
             "days_pending": complaint["days_pending"],
             "complaint_frequency": complaint["complaint_frequency"],
+            "estimated_repair_time": complaint["estimated_repair_time"],
             "safety_risk": complaint["safety_risk"],
             "priority_score": complaint["priority_score"],
             "priority_category": complaint["priority_category"],

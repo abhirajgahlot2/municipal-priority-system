@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from pathlib import Path
 
 DB_PATH = Path(__file__).resolve().parent / "complaints.db"
@@ -67,6 +68,50 @@ def get_complaint_by_key(unique_key):
             (unique_key,),
         ).fetchone()
         return dict(row) if row else None
+    finally:
+        conn.close()
+
+
+def mark_complaint_completed(unique_key):
+    conn = get_connection()
+    try:
+        cursor = conn.execute(
+            """
+            UPDATE complaints
+            SET status = 'closed', closed_date = ?
+            WHERE unique_key = ? AND lower(status) != 'closed'
+            """,
+            (datetime.now().isoformat(timespec="seconds"), unique_key),
+        )
+        if cursor.rowcount:
+            conn.execute(
+                """
+                UPDATE work_order_items
+                SET status = 'completed'
+                WHERE complaint_unique_key = ?
+                """,
+                (unique_key,),
+            )
+            conn.execute(
+                """
+                UPDATE work_orders
+                SET status = 'completed'
+                WHERE work_order_id IN (
+                    SELECT work_order_id
+                    FROM work_order_items
+                    WHERE complaint_unique_key = ?
+                )
+                AND NOT EXISTS (
+                    SELECT 1
+                    FROM work_order_items
+                    WHERE work_order_items.work_order_id = work_orders.work_order_id
+                      AND lower(work_order_items.status) != 'completed'
+                )
+                """,
+                (unique_key,),
+            )
+        conn.commit()
+        return cursor.rowcount > 0
     finally:
         conn.close()
 

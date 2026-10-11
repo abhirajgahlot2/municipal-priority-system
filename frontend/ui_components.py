@@ -10,6 +10,7 @@ incorporating the project images:
 """
 
 import base64
+from html import escape
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import streamlit as st
@@ -221,7 +222,7 @@ def render_header():
                 unsafe_allow_html=True,
             )
         else:
-            st.write("🏛️ **Municipal AI**")
+            st.write("**Municipal AI**")
 
     with col_r:
         st.markdown(
@@ -259,6 +260,10 @@ def render_complaint_result_card(result: Dict[str, Any]):
     priority_score = float(result.get("priority_score", 0.0))
     category = result.get("priority_category", "LOW")
     badge_html = render_priority_badge(category)
+    unique_key = escape(str(result.get("unique_key", "")))
+    complaint_type = escape(str(result.get("complaint_type", "")))
+    agency = escape(str(result.get("agency", "")))
+    incident_zip = escape(str(result.get("incident_zip", "")))
 
     st.markdown(
         f"""
@@ -266,10 +271,10 @@ def render_complaint_result_card(result: Dict[str, Any]):
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div>
                     <h3 style="margin: 0; color: #f8fafc; font-size: 1.3rem;">
-                        📋 Complaint Evaluated: <span style="color: #38bdf8;">{result.get('unique_key')}</span>
+                        Complaint Evaluated: <span style="color: #38bdf8;">{unique_key}</span>
                     </h3>
                     <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 0.9rem;">
-                        Type: <strong>{result.get('complaint_type')}</strong> | Agency: <strong>{result.get('agency')}</strong> | Location/Zip: <strong>{result.get('incident_zip')}</strong>
+                        Type: <strong>{complaint_type}</strong> | Agency: <strong>{agency}</strong> | Location/Zip: <strong>{incident_zip}</strong>
                     </p>
                 </div>
                 <div>{badge_html}</div>
@@ -282,29 +287,29 @@ def render_complaint_result_card(result: Dict[str, Any]):
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.metric(
-            label="🛡️ Safety Hazard Risk",
+            label="Safety Hazard Risk",
             value=f"{safety_risk * 100:.1f}%",
             delta=f"Risk Score: {safety_risk:.3f}",
         )
     with c2:
         st.metric(
-            label="⚡ AI Priority Score",
+            label="AI Priority Score",
             value=f"{priority_score * 100:.1f}%",
             delta=f"Score: {priority_score:.3f}",
         )
     with c3:
         st.metric(
-            label="🏷️ Priority Category",
+            label="Priority Category",
             value=category,
         )
     with c4:
         st.metric(
-            label="⏱️ Est. Crew Repair Time",
+            label="Estimated Crew Repair Time",
             value=f"{result.get('estimated_repair_time', 4.0)} hrs",
         )
 
     # Breakdown progress bars
-    st.markdown("#### 🔬 Detailed Feature Attribution & Risk Signals")
+    st.markdown("#### Detailed Feature Attribution & Risk Signals")
     col_a, col_b = st.columns(2)
     with col_a:
         st.write(f"**Severity (0-10):** {result.get('severity', 0.0)}/10")
@@ -335,7 +340,7 @@ def render_image_gallery():
     swachh_img = CURRENT_DIR / "swachh_bharat.jpg"
 
     st.markdown("---")
-    st.markdown("### 📸 Municipal Work & Field Resolution")
+    st.markdown("### Municipal Work & Field Resolution")
     st.caption("Real-world municipal operations and field work prioritized by the system:")
 
     c1, c2, c3 = st.columns(3)
@@ -343,20 +348,20 @@ def render_image_gallery():
         if road_img.exists():
             st.image(
                 str(road_img),
-                use_container_width=True,
+                width="stretch",
                 caption="Road Infrastructure & Pothole Repair",
             )
     with c2:
         if swachh_img.exists():
             st.image(
                 str(swachh_img),
-                use_container_width=True,
+                width="stretch",
                 caption="Sanitation & Clean City Mission",
             )
     with c3:
         if clean_img.exists():
             st.image(
                 str(clean_img),
-                use_container_width=True,
+                width="stretch",
                 caption="Urban Maintenance & Public Wellbeing",
             )

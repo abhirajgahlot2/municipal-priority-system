@@ -59,6 +59,7 @@ from data.database import (
     save_work_order,
     get_complaint_by_key,
     get_work_order,
+    mark_complaint_completed as mark_complaint_completed_in_db,
 )
 
 
@@ -289,6 +290,11 @@ def get_all_complaints_df() -> List[Dict[str, Any]]:
         return rows
     finally:
         conn.close()
+
+
+def mark_complaint_completed(unique_key: str) -> bool:
+    """Mark a complaint and its work-order items complete in SQLite."""
+    return mark_complaint_completed_in_db(unique_key)
 
 
 def get_all_work_orders_summary() -> List[Dict[str, Any]]:
