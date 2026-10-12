@@ -10,6 +10,7 @@ from backend.feature_engineering import (
     derive_severity,
     derive_traffic_impact,
     derive_weather_risk,
+    estimate_repair_time,
     engineer_features,
 )
 
@@ -35,6 +36,31 @@ class TestFeatureEngineering(unittest.TestCase):
 
         self.assertEqual(derive_severity(hazard), 10.0)
         self.assertEqual(derive_severity(minor_noise), 2.0)
+
+    def test_repair_time_estimate_varies_by_problem_and_scale(self):
+        pothole = {
+            "complaint_type": "Pothole",
+            "descriptor": "Small road damage",
+            "severity": 5,
+        }
+        sanitation = {
+            "complaint_type": "Sanitation Condition",
+            "descriptor": "Overflowing garbage",
+            "severity": 5,
+        }
+        major_water_main_break = {
+            "complaint_type": "Water Main Break",
+            "descriptor": "Major break affecting the neighborhood",
+            "severity": 9,
+        }
+
+        pothole_hours = estimate_repair_time(pothole)
+        sanitation_hours = estimate_repair_time(sanitation)
+        water_main_hours = estimate_repair_time(major_water_main_break)
+
+        self.assertNotEqual(pothole_hours, sanitation_hours)
+        self.assertGreater(water_main_hours, pothole_hours)
+        self.assertGreater(pothole_hours, sanitation_hours)
 
     def test_traffic_public_and_weather_scores_cover_key_categories(self):
         traffic_signal = {

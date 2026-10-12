@@ -271,7 +271,7 @@ def render_complaint_result_card(result: Dict[str, Any]):
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                 <div>
                     <h3 style="margin: 0; color: #f8fafc; font-size: 1.3rem;">
-                        Complaint Evaluated: <span style="color: #38bdf8;">{unique_key}</span>
+                        Complaint ID: <span style="color: #38bdf8;">{unique_key}</span>
                     </h3>
                     <p style="margin: 2px 0 0 0; color: #94a3b8; font-size: 0.9rem;">
                         Type: <strong>{complaint_type}</strong> | Agency: <strong>{agency}</strong> | Location/Zip: <strong>{incident_zip}</strong>
@@ -326,7 +326,13 @@ def render_complaint_result_card(result: Dict[str, Any]):
         st.progress(min(1.0, float(result.get("weather_risk", 0.0)) / 10.0))
 
         pending_days = float(result.get("days_pending", 0.0))
-        st.write(f"**Days Pending:** {pending_days} days")
+        if pending_days < 1:
+            pending_label = "0 days" if pending_days <= 0 else "Less than 1 day"
+        elif pending_days == 1:
+            pending_label = "1 day"
+        else:
+            pending_label = f"{pending_days:.1f} days"
+        st.write(f"**Days Pending:** {pending_label}")
         st.progress(min(1.0, pending_days / 30.0))
 
         st.write(f"**Complaint Frequency (0-10):** {result.get('complaint_frequency', 0.0)}/10")

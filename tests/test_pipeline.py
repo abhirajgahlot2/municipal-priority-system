@@ -62,6 +62,28 @@ class TestPipeline(unittest.TestCase):
                 {"complaint_type": "Pothole", "severity": 11}
             )
 
+    def test_pipeline_estimates_different_repair_times_by_complaint(self):
+        pothole = pipeline._build_feature_row({
+            "complaint_type": "Pothole",
+            "descriptor": "Road surface damage",
+        })
+        sanitation = pipeline._build_feature_row({
+            "complaint_type": "Sanitation Condition",
+            "descriptor": "Overflowing garbage",
+        })
+
+        self.assertNotEqual(
+            pothole["estimated_repair_time"],
+            sanitation["estimated_repair_time"],
+        )
+
+    def test_pipeline_generates_readable_unique_complaint_ids(self):
+        first_id = pipeline._build_feature_row({})["unique_key"]
+        second_id = pipeline._build_feature_row({})["unique_key"]
+
+        self.assertRegex(first_id, r"^CMP-\d{8}-[A-F0-9]{8}$")
+        self.assertNotEqual(first_id, second_id)
+
 
 if __name__ == "__main__":
     unittest.main()

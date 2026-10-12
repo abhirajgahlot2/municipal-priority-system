@@ -125,6 +125,45 @@ def derive_severity(row):
     return float(np.clip(score, 0, 10))
 
 
+def estimate_repair_time(row):
+    """Estimate crew repair hours from complaint type and description."""
+    text = combine_text(row)
+
+    if contains_any(text, ["gas leak", "fire", "explosion", "building collapse"]):
+        hours = 10.0
+    elif contains_any(text, ["water main break", "sewer main break", "major flooding"]):
+        hours = 8.0
+    elif contains_any(text, ["traffic signal", "traffic light", "signal failure"]):
+        hours = 4.5
+    elif contains_any(text, [
+        "flooding", "street flood", "sewer", "downed tree", "broken hydrant",
+        "hazardous tree",
+    ]):
+        hours = 5.0
+    elif contains_any(text, [
+        "pothole", "road damage", "sidewalk", "drainage", "water leak",
+        "streetlight", "street light", "electrical", "hot water", "heat",
+    ]):
+        hours = 3.0
+    elif contains_any(text, [
+        "garbage", "sanitation", "waste", "graffiti", "noise", "parking",
+        "litter", "blocked driveway",
+    ]):
+        hours = 1.5
+    else:
+        hours = 2.5
+
+    severity = float(np.clip(row.get("severity", 5.0), 0.0, 10.0))
+    hours *= 0.8 + severity * 0.04
+
+    if contains_any(text, ["major", "severe", "extensive", "widespread", "emergency"]):
+        hours *= 1.3
+    elif contains_any(text, ["minor", "small", "cosmetic"]):
+        hours *= 0.75
+
+    return round(float(np.clip(hours, 0.5, 120.0)), 1)
+
+
 # ============================================================
 # 4. TRAFFIC IMPACT
 # ============================================================

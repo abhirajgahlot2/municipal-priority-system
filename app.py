@@ -408,11 +408,6 @@ with tab_dispatch:
 
             st.dataframe(pd.DataFrame(table_data), width="stretch")
 
-            if current_wo.get("notes"):
-                with st.expander("Optimizer Notes & Constraints"):
-                    for note in current_wo["notes"]:
-                        st.write(f"- {note}")
-
 # ============================================================
 # GIVEN IMAGES AT THE END TO SHOW WORK
 # ============================================================

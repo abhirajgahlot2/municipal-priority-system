@@ -38,7 +38,7 @@ Streamlit prints a local URL in the terminal; open that URL in your browser. Sto
 3. Select **Run Priority Pipeline & Save Complaint**.
 4. Review the priority score and category, safety risk, calculated feature values, work-order ID, and pipeline output.
 
-The form sends those four complaint fields to `backend.pipeline.run_pipeline()`. The backend derives impact and hazard features from the complaint text when numeric feature values are not supplied. Those derived values are estimates, not live sensor readings. The pipeline stores the complaint and creates a single-complaint work order.
+The form sends those four complaint fields to `backend.pipeline.run_pipeline()`. The backend derives impact, hazard, and estimated crew repair-time features from the complaint type and description when numeric values are not supplied. Repair time uses typical issue-specific crew-hour estimates, adjusted for severity and scale words such as “minor” or “major”; it is an estimate, not a live operational measurement. The pipeline stores the complaint and creates a single-complaint work order.
 
 ### Prioritized Work Orders
 
@@ -87,7 +87,7 @@ result = run_pipeline({
 print(result)
 ```
 
-The pipeline accepts optional derived features such as `severity`, `traffic_impact`, `public_impact`, `weather_risk`, `days_pending`, `complaint_frequency`, and `estimated_repair_time`. If impact values are omitted, feature engineering estimates them from the complaint details. If `unique_key` is omitted, the pipeline generates one. Saving a complaint with an existing key replaces its complaint record.
+The pipeline accepts optional derived features such as `severity`, `traffic_impact`, `public_impact`, `weather_risk`, `days_pending`, `complaint_frequency`, and `estimated_repair_time`. If impact or repair-time values are omitted, feature engineering estimates them from the complaint details. A supplied `estimated_repair_time` is used as-is. If `unique_key` is omitted, the pipeline generates a readable ID in the format `CMP-YYYYMMDD-XXXXXXXX` (date plus a unique hexadecimal suffix). Saving a complaint with an existing key replaces its complaint record.
 
 ## Database
 

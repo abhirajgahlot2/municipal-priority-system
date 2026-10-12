@@ -4,6 +4,7 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
+from uuid import uuid4
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -19,6 +20,7 @@ from backend.feature_engineering import (
     derive_severity,
     derive_traffic_impact,
     derive_weather_risk,
+    estimate_repair_time,
 )
 from backend.fuzzy_engine import calculate_safety_risk
 from backend.genetic_optimizer import optimize_work_order
@@ -63,6 +65,13 @@ def _priority_category(score: float) -> str:
     if score >= 0.40:
         return "MEDIUM"
     return "LOW"
+
+
+def generate_complaint_id() -> str:
+    """Create a readable, collision-resistant municipal complaint ID."""
+    date_part = datetime.now().strftime("%Y%m%d")
+    unique_part = uuid4().hex[:8].upper()
+    return f"CMP-{date_part}-{unique_part}"
 
 
 def _estimate_priority_score(complaint: dict) -> float:
@@ -128,7 +137,7 @@ def _predict_priority_score(complaint: dict) -> float:
 
 def _build_feature_row(complaint_input: dict) -> dict:
     complaint = {
-        "unique_key": complaint_input.get("unique_key") or complaint_input.get("id") or f"complaint_{int(datetime.now().timestamp() * 1000)}",
+        "unique_key": complaint_input.get("unique_key") or complaint_input.get("id") or generate_complaint_id(),
         "created_date": complaint_input.get("created_date") or datetime.now().isoformat(timespec="seconds"),
         "closed_date": complaint_input.get("closed_date"),
         "agency": _safe_text(complaint_input.get("agency"), "USER"),
@@ -166,7 +175,10 @@ def _build_feature_row(complaint_input: dict) -> dict:
         complaint_input, "complaint_frequency", 0.0, maximum=10.0
     )
     complaint["estimated_repair_time"] = _input_number(
-        complaint_input, "estimated_repair_time", 4.0, minimum=0.5
+        complaint_input,
+        "estimated_repair_time",
+        estimate_repair_time(complaint),
+        minimum=0.5,
     )
 
     complaint["safety_risk"] = float(calculate_safety_risk({

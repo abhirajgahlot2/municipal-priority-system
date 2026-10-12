@@ -38,6 +38,7 @@ from backend.pipeline import (
     _load_model_if_available,
     _predict_priority_score,
     _priority_category,
+    generate_complaint_id,
 )
 from backend.feature_engineering import (
     derive_severity,
@@ -45,6 +46,7 @@ from backend.feature_engineering import (
     derive_public_impact,
     derive_weather_risk,
     derive_days_pending,
+    estimate_repair_time,
 )
 
 # Member 3: Genetic Algorithm
@@ -75,7 +77,7 @@ def normalize_complaint_dict(data: Dict[str, Any]) -> Dict[str, Any]:
     unique_key = (
         data.get("unique_key")
         or data.get("id")
-        or f"CMP-{int(datetime.now().timestamp() * 1000)}"
+        or generate_complaint_id()
     )
 
     complaint_type = str(data.get("complaint_type") or "Pothole").strip()
@@ -108,7 +110,14 @@ def normalize_complaint_dict(data: Dict[str, Any]) -> Dict[str, Any]:
     frequency_count = int(data.get("frequency_count") or int(round(complaint_frequency)))
 
     estimated_repair_time = _to_float_range(
-        data.get("estimated_repair_time"), 4.0, low=0.5, high=120.0
+        data.get("estimated_repair_time"),
+        estimate_repair_time({
+            "complaint_type": complaint_type,
+            "descriptor": descriptor,
+            "severity": severity,
+        }),
+        low=0.5,
+        high=120.0,
     )
 
     return {
